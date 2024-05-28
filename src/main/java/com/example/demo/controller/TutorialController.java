@@ -245,7 +245,7 @@ public class TutorialController {
 
             _tutorial.setOperationTreasuryAnterior(tutorial.getOperationTreasuryAnterior());
             _tutorial.setOperationTreasuryToday(tutorial.getOperationTreasuryToday());
-            _tutorial.setOperationTreasuryToday(totalOperationTreasury);
+            _tutorial.setTotalOperationTreasury(totalOperationTreasury);
 
             _tutorial.setOperationPreviousRegulation(tutorial.getOperationPreviousRegulation());
             _tutorial.setOperationRegulationToday(tutorial.getOperationRegulationToday());
