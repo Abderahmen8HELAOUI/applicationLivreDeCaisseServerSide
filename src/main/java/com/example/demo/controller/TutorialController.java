@@ -1,7 +1,11 @@
 package com.example.demo.controller;
 
+import com.example.demo.model.Organism;
 import com.example.demo.model.Tutorial;
+import com.example.demo.repository.OrganismRepository;
 import com.example.demo.repository.TutorialRepository;
+import com.example.demo.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,6 +16,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -21,10 +26,12 @@ import java.util.*;
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class TutorialController {
 
-    @Autowired
-    TutorialRepository tutorialRepository;
+    private final TutorialRepository tutorialRepository;
+
+    private final OrganismRepository organismRepository;
 
     private Sort.Direction getSortDirection(String direction) {
         if (direction.equals("asc")) {
@@ -66,8 +73,10 @@ public class TutorialController {
         }
     }
 
-    @GetMapping("/tutorials")
+    @GetMapping("/organisms/{organismCode}/tutorials")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     public ResponseEntity<Map<String, Object>> getAllTutorialsPage(
+            @PathVariable String organismCode,
             @RequestParam(required = false) String title,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "3") int size,
@@ -93,9 +102,11 @@ public class TutorialController {
 
             Page<Tutorial> pageTuts;
             if (title == null)
-                pageTuts = tutorialRepository.findAll(pagingSort);
+                //pageTuts = tutorialRepository.findAll(pagingSort);
+                pageTuts = tutorialRepository.findByOrganismCode(organismCode, pagingSort);
             else
-                pageTuts = tutorialRepository.findByTitleContaining(title, pagingSort);
+                //pageTuts = tutorialRepository.findByTitleContaining(title, pagingSort);
+                pageTuts = tutorialRepository.findByTitleContainingAndOrganismCode(title, organismCode, pagingSort);
 
             tutorials = pageTuts.getContent();
 
@@ -110,6 +121,17 @@ public class TutorialController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+//    @GetMapping("/organisms/{organismId}/tutorials")
+//    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
+//    public ResponseEntity<List<Tutorial>> getAllCommentsByTutorialId(@PathVariable(value = "organismId") UUID organismId) {
+//        if (!organismRepository.existsById(organismId)) {
+//            throw new ResourceNotFoundException("Not found Tutorial with id = " + organismId);
+//        }
+//
+//        List<Tutorial> tutorials = tutorialRepository.findByOrganismId(organismId);
+//        return new ResponseEntity<>(tutorials, HttpStatus.OK);
+//    }
 
     @GetMapping("/tutorials/published")
     public ResponseEntity<Map<String, Object>> findByPublished(
@@ -136,6 +158,7 @@ public class TutorialController {
     }
 
     @GetMapping("/tutorials/{id}")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     public ResponseEntity<Tutorial> getTutorialById(@PathVariable("id") long id) {
         Optional<Tutorial> tutorialData = tutorialRepository.findById(id);
 
@@ -146,13 +169,95 @@ public class TutorialController {
         }
     }
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+//    @PostMapping("/organisms/{organismId}/tutorials")
+//    @PreAuthorize("hasRole('MODERATOR')")
+//    public ResponseEntity<Tutorial> createTutorial(@PathVariable(value = "organismId") UUID organismId,
+//                                                   @RequestBody Tutorial tutorialRequest) {
+//        LocalDate currentLocalDate = LocalDate.now();
+//        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+//        String formattedDateTime = currentLocalDate.format(dateTimeFormatter);
+//
+//        try {
+//            double totalRecipeToday = tutorialRequest.getRecipeToday() + tutorialRequest.getBalancePreviousMonth();
+//            double totalOperationTreasury = tutorialRequest.getOperationTreasuryAnterior() + tutorialRequest.getOperationTreasuryToday();
+//            double totalOperationRegulation = tutorialRequest.getOperationPreviousRegulation() + tutorialRequest.getOperationRegulationToday();
+//            double totalExpenses = totalOperationTreasury + totalOperationRegulation;
+//            double finalBalanceToday = totalRecipeToday - totalExpenses;
+//
+//            double finalPostCurrentAccount = (tutorialRequest.getPostCurrentAccount() + tutorialRequest.getCreditExpected())
+//                    - tutorialRequest.getRateExpected();
+//            double totalCash = finalBalanceToday - (tutorialRequest.getStatesRepartition() + tutorialRequest.getOtherValues() +
+//                    finalPostCurrentAccount);
+//            double moneyOnCashier = totalCash - tutorialRequest.getMoneySpecies();
+//
+//            Tutorial tutorial = organismRepository.findById(organismId).map(organism -> {
+//                tutorialRequest.setOrganism(organism);
+//                tutorialRequest.setTitle("Operation Date is: " + formattedDateTime);
+//                tutorialRequest.setTotalRecipeToday(totalRecipeToday);
+//                tutorialRequest.setTotalOperationTreasury(totalOperationTreasury);
+//                tutorialRequest.setTotalOperationRegulation(totalOperationRegulation);
+//                tutorialRequest.setTotalExpenses(totalExpenses);
+//                tutorialRequest.setFinalBalanceToday(finalBalanceToday);
+//                tutorialRequest.setFinalPostCurrentAccount(finalPostCurrentAccount);
+//                tutorialRequest.setTotalCash(totalCash);
+//                tutorialRequest.setMoneyOnCashier(moneyOnCashier);
+//                return tutorialRepository.save(tutorialRequest);
+//            }).orElseThrow(() -> new ResourceNotFoundException("Not found Organism with id = " + organismId));
+//
+//            return new ResponseEntity<>(tutorial, HttpStatus.CREATED);
+//        } catch (Exception e) {
+//            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+//        }
+//    }
 
-    public Double getTotalRecipeToday() {
-        String sql = "SELECT COALESCE(SUM(recipe_today + balance_previous_month), 0) AS total_recipes FROM tutorials";
-        return jdbcTemplate.queryForObject(sql, Double.class);
+    @PostMapping("/organisms/{organismCode}/tutorials")
+    @PreAuthorize("hasRole('MODERATOR')")
+    public ResponseEntity<Tutorial> createTutorialByOrganismCode(@PathVariable(value = "organismCode") String organismCode,
+                                                   @RequestBody Tutorial tutorialRequest) {
+        LocalDate currentLocalDate = LocalDate.now();
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        String formattedDateTime = currentLocalDate.format(dateTimeFormatter);
+
+        try {
+            double totalRecipeToday = tutorialRequest.getRecipeToday() + tutorialRequest.getBalancePreviousMonth();
+            double totalOperationTreasury = tutorialRequest.getOperationTreasuryAnterior() + tutorialRequest.getOperationTreasuryToday();
+            double totalOperationRegulation = tutorialRequest.getOperationPreviousRegulation() + tutorialRequest.getOperationRegulationToday();
+            double totalExpenses = totalOperationTreasury + totalOperationRegulation;
+            double finalBalanceToday = totalRecipeToday - totalExpenses;
+
+            double finalPostCurrentAccount = (tutorialRequest.getPostCurrentAccount() + tutorialRequest.getCreditExpected())
+                    - tutorialRequest.getRateExpected();
+            double totalCash = finalBalanceToday - (tutorialRequest.getStatesRepartition() + tutorialRequest.getOtherValues() +
+                    finalPostCurrentAccount);
+            double moneyOnCashier = totalCash - tutorialRequest.getMoneySpecies();
+
+            Optional<Organism> organismData = organismRepository.findByCode(organismCode);
+
+            if (organismData.isPresent()) {
+                Organism organism = organismData.get();
+                tutorialRequest.setOrganism(organism);
+                tutorialRequest.setTitle("Operation Date is: " + formattedDateTime);
+                tutorialRequest.setTotalRecipeToday(totalRecipeToday);
+                tutorialRequest.setTotalOperationTreasury(totalOperationTreasury);
+                tutorialRequest.setTotalOperationRegulation(totalOperationRegulation);
+                tutorialRequest.setTotalExpenses(totalExpenses);
+                tutorialRequest.setFinalBalanceToday(finalBalanceToday);
+                tutorialRequest.setFinalPostCurrentAccount(finalPostCurrentAccount);
+                tutorialRequest.setTotalCash(totalCash);
+                tutorialRequest.setMoneyOnCashier(moneyOnCashier);
+
+                Tutorial tutorial = tutorialRepository.save(tutorialRequest);
+
+                return new ResponseEntity<>(tutorial, HttpStatus.CREATED);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
+
+
 
     @PostMapping("/tutorials")
     public ResponseEntity<Tutorial> createTutorial(@RequestBody Tutorial tutorial) {
@@ -210,7 +315,7 @@ public class TutorialController {
 
                     moneyOnCashier,
 
-                    tutorial.getOrganismId(),
+                    //tutorial.getOrganismId(),
                     tutorial.getDescription(),
                     tutorial.isPublished()));
 
@@ -221,6 +326,7 @@ public class TutorialController {
     }
 
     @PutMapping("/tutorials/{id}")
+    @PreAuthorize("hasRole('MODERATOR')")
     public ResponseEntity<Tutorial> updateTutorial(@PathVariable("id") long id, @RequestBody Tutorial tutorial) {
         Optional<Tutorial> tutorialData = tutorialRepository.findById(id);
 
@@ -245,10 +351,10 @@ public class TutorialController {
 
             _tutorial.setOperationTreasuryAnterior(tutorial.getOperationTreasuryAnterior());
             _tutorial.setOperationTreasuryToday(tutorial.getOperationTreasuryToday());
-            _tutorial.setOperationTreasuryToday(totalOperationTreasury);
+            _tutorial.setTotalOperationTreasury(totalOperationTreasury);
 
             _tutorial.setOperationPreviousRegulation(tutorial.getOperationPreviousRegulation());
-            _tutorial.setOperationTreasuryToday(tutorial.getOperationRegulationToday());
+            _tutorial.setOperationRegulationToday(tutorial.getOperationRegulationToday());
             _tutorial.setTotalOperationRegulation(totalOperationRegulation);
 
             _tutorial.setTotalExpenses(totalExpenses);
@@ -267,7 +373,7 @@ public class TutorialController {
             _tutorial.setMoneySpecies(tutorial.getMoneySpecies());
             _tutorial.setMoneyOnCashier(moneyOnCashier);
 
-            _tutorial.setOrganismId(tutorial.getOrganismId());
+            //_tutorial.setOrganismId(tutorial.getOrganismId());
             _tutorial.setDescription(tutorial.getDescription());
             _tutorial.setPublished(tutorial.isPublished());
             return new ResponseEntity<>(tutorialRepository.save(_tutorial), HttpStatus.OK);
@@ -277,6 +383,7 @@ public class TutorialController {
     }
 
     @DeleteMapping("/tutorials/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<HttpStatus> deleteTutorial(@PathVariable("id") long id) {
         try {
             tutorialRepository.deleteById(id);
@@ -287,6 +394,7 @@ public class TutorialController {
     }
 
     @DeleteMapping("/tutorials")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<HttpStatus> deleteAllTutorials() {
         try {
             tutorialRepository.deleteAll();
@@ -355,16 +463,26 @@ public class TutorialController {
     @GetMapping("/tutorials/finalBalanceLastMonth")
     public Double getFinalBalanceLastMonth(){
         return tutorialRepository.getFinalBalanceLastMonth();
-    };
+    }
 
     @GetMapping("/tutorials/treasuryOperationsLastRow")
     public double totalTreasuryOperationsLastRow(){
         return tutorialRepository.totalTreasuryOperationsLastRow();
-    };
+    }
 
     @GetMapping("/tutorials/regulationOperationsLastRow")
     public double totalRegulationOperationsLastRow(){
         return tutorialRepository.totalRegulationOperationsLastRow();
-    };
+    }
+
+    @GetMapping("/tutorials/postalCurrentAccountLastRow")
+    public double getPostalCurrentAccountLastRow(){
+        return tutorialRepository.postalCurrentAccountLastRow();
+    }
+
+    @GetMapping("/tutorials/statesRepartitionLastRow")
+    public double getStatesRepartitionLastRow(){
+        return tutorialRepository.statesRepartition();
+     }
 
 }

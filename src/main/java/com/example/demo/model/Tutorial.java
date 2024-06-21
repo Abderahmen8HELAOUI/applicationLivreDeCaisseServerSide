@@ -1,8 +1,26 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 @Entity
+@Data
+@NoArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "tutorials")
 public class Tutorial {
 
@@ -73,18 +91,40 @@ public class Tutorial {
     @Column(name = "moneyOnCashier")
     private double moneyOnCashier;
 
-    @Column(name = "organism_id")
-    private double organismId;
-
     @Column(name = "description")
     private String description;
 
     @Column(name = "published")
     private boolean published;
 
-    public Tutorial() {
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "organism_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @JsonIgnore
+    private Organism organism;
 
-    }
+    @CreatedDate
+    @Column(
+            nullable = false,
+            updatable = false
+    )
+    private LocalDateTime createDate;
+
+    @LastModifiedDate
+    @Column(insertable = false)
+    private LocalDateTime lastModified;
+
+
+    @CreatedBy
+    @Column(
+            nullable = false,
+            updatable = false
+    )
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(insertable = false)
+    private String lastModifiedBy;
 
     public Tutorial(String title,
                     double recipeToday, double balancePreviousMonth, double totalRecipeToday,
@@ -97,7 +137,7 @@ public class Tutorial {
                     double totalCash,
                     double moneySpecies,
                     double moneyOnCashier,
-                    double organismId, String description,
+                   String description,
                     boolean published) {
         this.title = title;
         this.recipeToday = recipeToday;
@@ -130,208 +170,8 @@ public class Tutorial {
         this.moneySpecies = moneySpecies;
 
         this.moneyOnCashier = moneyOnCashier;
-        this.organismId = organismId;
+
         this.description = description;
-        this.published = published;
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public double getRecipeToday() {
-        return recipeToday;
-    }
-
-    public void setRecipeToday(double recipeToday) {
-        this.recipeToday = recipeToday;
-    }
-
-    public double getBalancePreviousMonth() {
-        return balancePreviousMonth;
-    }
-
-    public void setBalancePreviousMonth(double balancePreviousMonth) {
-        this.balancePreviousMonth = balancePreviousMonth;
-    }
-
-    public double getTotalRecipeToday() {
-        return totalRecipeToday;
-    }
-
-    public void setTotalRecipeToday(double totalRecipeToday) {
-        this.totalRecipeToday = totalRecipeToday;
-    }
-
-    public double getOperationTreasuryAnterior() {
-        return operationTreasuryAnterior;
-    }
-
-    public void setOperationTreasuryAnterior(double operationTreasuryAnterior) {
-        this.operationTreasuryAnterior = operationTreasuryAnterior;
-    }
-
-    public double getOperationTreasuryToday() {
-        return operationTreasuryToday;
-    }
-
-    public void setOperationTreasuryToday(double operationTreasuryToday) {
-        this.operationTreasuryToday = operationTreasuryToday;
-    }
-
-    public double getTotalOperationTreasury() {
-        return totalOperationTreasury;
-    }
-
-    public void setTotalOperationTreasury(double totalOperationTreasury) {
-        this.totalOperationTreasury = totalOperationTreasury;
-    }
-
-    public double getOperationPreviousRegulation() {
-        return operationPreviousRegulation;
-    }
-
-    public void setOperationPreviousRegulation(double operationPreviousRegulation) {
-        this.operationPreviousRegulation = operationPreviousRegulation;
-    }
-
-    public double getOperationRegulationToday() {
-        return operationRegulationToday;
-    }
-
-    public void setOperationRegulationToday(double operationRegulationToday) {
-        this.operationRegulationToday = operationRegulationToday;
-    }
-
-    public double getTotalOperationRegulation() {
-        return totalOperationRegulation;
-    }
-
-    public void setTotalOperationRegulation(double totalOperationRegulation) {
-        this.totalOperationRegulation = totalOperationRegulation;
-    }
-
-    public double getTotalExpenses() {
-        return totalExpenses;
-    }
-
-    public void setTotalExpenses(double totalExpenses) {
-        this.totalExpenses = totalExpenses;
-    }
-
-    public double getFinalBalanceToday() {
-        return finalBalanceToday;
-    }
-
-    public void setFinalBalanceToday(double finalBalanceToday) {
-        this.finalBalanceToday = finalBalanceToday;
-    }
-
-    public double getPostCurrentAccount() {
-        return postCurrentAccount;
-    }
-
-    public void setPostCurrentAccount(double postCurrentAccount) {
-        this.postCurrentAccount = postCurrentAccount;
-    }
-
-    public double getCreditExpected() {
-        return creditExpected;
-    }
-
-    public void setCreditExpected(double creditExpected) {
-        this.creditExpected = creditExpected;
-    }
-
-    public double getRateExpected() {
-        return rateExpected;
-    }
-
-    public void setRateExpected(double rateExpected) {
-        this.rateExpected = rateExpected;
-    }
-
-    public double getOtherValues() {
-        return otherValues;
-    }
-
-    public void setOtherValues(double otherValues) {
-        this.otherValues = otherValues;
-    }
-
-    public double getFinalPostCurrentAccount() {
-        return finalPostCurrentAccount;
-    }
-
-    public void setFinalPostCurrentAccount(double finalPostCurrentAccount) {
-        this.finalPostCurrentAccount = finalPostCurrentAccount;
-    }
-
-    public double getStatesRepartition() {
-        return statesRepartition;
-    }
-
-    public void setStatesRepartition(double statesRepartition) {
-        this.statesRepartition = statesRepartition;
-    }
-
-    public double getTotalCash() {
-        return totalCash;
-    }
-
-    public void setTotalCash(double totalCash) {
-        this.totalCash = totalCash;
-    }
-
-    public double getMoneySpecies() {
-        return moneySpecies;
-    }
-
-    public void setMoneySpecies(double moneySpecies) {
-        this.moneySpecies = moneySpecies;
-    }
-
-    public double getMoneyOnCashier() {
-        return moneyOnCashier;
-    }
-
-    public void setMoneyOnCashier(double moneyOnCashier) {
-        this.moneyOnCashier = moneyOnCashier;
-    }
-
-    public double getOrganismId() {
-        return organismId;
-    }
-
-    public void setOrganismId(double organismId) {
-        this.organismId = organismId;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public boolean isPublished() {
-        return published;
-    }
-
-    public void setPublished(boolean published) {
         this.published = published;
     }
 

@@ -13,8 +13,8 @@ public class WebConfig implements WebMvcConfigurer {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**")
-                        .allowedOrigins("https://applicationlivredecaisseclient-c45a7f748dd6.herokuapp.com/")
+                registry.addMapping("/**")
+                        .allowedOrigins("http://localhost:4200", "http://localhost:8080")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
@@ -22,4 +22,5 @@ public class WebConfig implements WebMvcConfigurer {
         };
     }
 }
+
 

@@ -10,13 +10,19 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
     Page<Tutorial> findByPublished(boolean published, Pageable pageable);
 
     Page<Tutorial> findByTitleContaining(String title, Pageable pageable);
 
+    List<Tutorial> findByOrganismId(UUID organismId);
+
     List<Tutorial> findByTitleContaining(String title, Sort sort);
+
+    Page<Tutorial> findByTitleContainingAndOrganismCode(String title, String organismCode, Pageable pageable);
+    Page<Tutorial> findByOrganismCode(String organismCode, Pageable pageable);
 
 
     @Query(value = "SELECT CAST(SUM(da.recipe_today + da.balance_previous_month ) as decimal(10,3)) AS total_recettes\n" +
@@ -129,8 +135,47 @@ public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
             "    );", nativeQuery = true)
     public double totalRegulationOperationsLastRow();
 
+    @Query(value = "WITH filtered_data AS (\n" +
+            "                SELECT\n" +
+            "                    da.postal_current_account,\n" +
+            "                    TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') AS operation_date\n" +
+            "                FROM\n" +
+            "                    public.tutorials da\n" +
+            "                WHERE\n" +
+            "                    TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') >= DATE_TRUNC('month', CURRENT_DATE)\n" +
+            "                  AND TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n" +
+            "            )\n" +
+            "            SELECT\n" +
+            "                (fd.postal_current_account ) AS prev_operation_treasury_sum\n" +
+            "            FROM\n" +
+            "                filtered_data fd\n" +
+            "            WHERE\n" +
+            "                fd.operation_date = (\n" +
+            "                    SELECT MAX(operation_date)\n" +
+            "                    FROM filtered_data\n" +
+            "                    WHERE operation_date < CURRENT_DATE\n" +
+            "                );", nativeQuery = true)
+    public double postalCurrentAccountLastRow();
 
-
-
-
+    @Query(value = "WITH filtered_data AS (\n" +
+            "                SELECT\n" +
+            "                    da.states_repartition,\n" +
+            "                    TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') AS operation_date\n" +
+            "                FROM\n" +
+            "                    public.tutorials da\n" +
+            "                WHERE\n" +
+            "                    TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') >= DATE_TRUNC('month', CURRENT_DATE)\n" +
+            "                  AND TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n" +
+            "            )\n" +
+            "            SELECT\n" +
+            "                (fd.states_repartition ) AS prev_operation_treasury_sum\n" +
+            "            FROM\n" +
+            "                filtered_data fd\n" +
+            "            WHERE\n" +
+            "                fd.operation_date = (\n" +
+            "                    SELECT MAX(operation_date)\n" +
+            "                    FROM filtered_data\n" +
+            "                    WHERE operation_date < CURRENT_DATE\n" +
+            "                );", nativeQuery = true)
+    public double statesRepartition();
 }
