@@ -32,7 +32,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 //for Angular Client (withCredentials)
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "https://applicationlivredecaisseclient-c45a7f748dd6.herokuapp.com")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
