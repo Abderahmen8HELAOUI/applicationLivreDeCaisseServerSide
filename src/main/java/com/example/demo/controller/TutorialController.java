@@ -23,7 +23,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@CrossOrigin(origins = "https://applicationlivredecaisseclient-c45a7f748dd6.herokuapp.com")
+//@CrossOrigin(origins = "https://applicationlivredecaisseclient-c45a7f748dd6.herokuapp.com")
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -169,67 +170,34 @@ public class TutorialController {
         }
     }
 
-//    @PostMapping("/organisms/{organismId}/tutorials")
-//    @PreAuthorize("hasRole('MODERATOR')")
-//    public ResponseEntity<Tutorial> createTutorial(@PathVariable(value = "organismId") UUID organismId,
-//                                                   @RequestBody Tutorial tutorialRequest) {
-//        LocalDate currentLocalDate = LocalDate.now();
-//        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-//        String formattedDateTime = currentLocalDate.format(dateTimeFormatter);
-//
-//        try {
-//            double totalRecipeToday = tutorialRequest.getRecipeToday() + tutorialRequest.getBalancePreviousMonth();
-//            double totalOperationTreasury = tutorialRequest.getOperationTreasuryAnterior() + tutorialRequest.getOperationTreasuryToday();
-//            double totalOperationRegulation = tutorialRequest.getOperationPreviousRegulation() + tutorialRequest.getOperationRegulationToday();
-//            double totalExpenses = totalOperationTreasury + totalOperationRegulation;
-//            double finalBalanceToday = totalRecipeToday - totalExpenses;
-//
-//            double finalPostCurrentAccount = (tutorialRequest.getPostCurrentAccount() + tutorialRequest.getCreditExpected())
-//                    - tutorialRequest.getRateExpected();
-//            double totalCash = finalBalanceToday - (tutorialRequest.getStatesRepartition() + tutorialRequest.getOtherValues() +
-//                    finalPostCurrentAccount);
-//            double moneyOnCashier = totalCash - tutorialRequest.getMoneySpecies();
-//
-//            Tutorial tutorial = organismRepository.findById(organismId).map(organism -> {
-//                tutorialRequest.setOrganism(organism);
-//                tutorialRequest.setTitle("Operation Date is: " + formattedDateTime);
-//                tutorialRequest.setTotalRecipeToday(totalRecipeToday);
-//                tutorialRequest.setTotalOperationTreasury(totalOperationTreasury);
-//                tutorialRequest.setTotalOperationRegulation(totalOperationRegulation);
-//                tutorialRequest.setTotalExpenses(totalExpenses);
-//                tutorialRequest.setFinalBalanceToday(finalBalanceToday);
-//                tutorialRequest.setFinalPostCurrentAccount(finalPostCurrentAccount);
-//                tutorialRequest.setTotalCash(totalCash);
-//                tutorialRequest.setMoneyOnCashier(moneyOnCashier);
-//                return tutorialRepository.save(tutorialRequest);
-//            }).orElseThrow(() -> new ResourceNotFoundException("Not found Organism with id = " + organismId));
-//
-//            return new ResponseEntity<>(tutorial, HttpStatus.CREATED);
-//        } catch (Exception e) {
-//            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-//        }
-//    }
-
     @PostMapping("/organisms/{organismCode}/tutorials")
     @PreAuthorize("hasRole('MODERATOR')")
-    public ResponseEntity<Tutorial> createTutorialByOrganismCode(@PathVariable(value = "organismCode") String organismCode,
-                                                   @RequestBody Tutorial tutorialRequest) {
+    public ResponseEntity<?> createTutorialByOrganismCode(
+            @PathVariable(value = "organismCode") String organismCode,
+            @RequestBody Tutorial tutorialRequest) {
+
         LocalDate currentLocalDate = LocalDate.now();
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         String formattedDateTime = currentLocalDate.format(dateTimeFormatter);
 
         try {
-            double totalRecipeToday = tutorialRequest.getRecipeToday() + tutorialRequest.getBalancePreviousMonth();
-            double totalOperationTreasury = tutorialRequest.getOperationTreasuryAnterior() + tutorialRequest.getOperationTreasuryToday();
-            double totalOperationRegulation = tutorialRequest.getOperationPreviousRegulation() + tutorialRequest.getOperationRegulationToday();
-            double totalExpenses = totalOperationTreasury + totalOperationRegulation;
-            double finalBalanceToday = totalRecipeToday - totalExpenses;
+            double totalRecipeToday = Math.round((tutorialRequest.getRecipeToday() + tutorialRequest.getBalancePreviousMonth())* 1000) / 1000.0;
 
-            double finalPostCurrentAccount = (tutorialRequest.getPostCurrentAccount() + tutorialRequest.getCreditExpected())
-                    - tutorialRequest.getRateExpected();
-            double totalCash = finalBalanceToday - (tutorialRequest.getStatesRepartition() + tutorialRequest.getOtherValues() +
-                    finalPostCurrentAccount);
-            double moneyOnCashier = totalCash - tutorialRequest.getMoneySpecies();
+            double totalOperationTreasury = Math.round((tutorialRequest.getOperationTreasuryAnterior() + tutorialRequest.getOperationTreasuryToday())* 1000) / 1000.0;
+
+            double totalOperationRegulation = Math.round((tutorialRequest.getOperationPreviousRegulation() + tutorialRequest.getOperationRegulationToday())* 1000) / 1000.0;
+
+            double totalExpenses = Math.round((totalOperationTreasury + totalOperationRegulation)* 1000) / 1000.0;
+
+            double finalBalanceToday = Math.round((totalRecipeToday - totalExpenses)* 1000) / 1000.0;
+
+            double finalPostCurrentAccount = Math.round(((tutorialRequest.getPostCurrentAccount() + tutorialRequest.getCreditExpected())
+                    - tutorialRequest.getRateExpected())* 1000) / 1000.0;
+
+            double totalCash = Math.round((finalBalanceToday - (tutorialRequest.getStatesRepartition() + tutorialRequest.getOtherValues() +
+                    finalPostCurrentAccount))* 1000) / 1000.0;
+
+            double calculatedMoneyOnCashier = Math.round((totalCash - tutorialRequest.getMoneySpecies())*1000)/1000.0;
 
             Optional<Organism> organismData = organismRepository.findByCode(organismCode);
 
@@ -244,11 +212,33 @@ public class TutorialController {
                 tutorialRequest.setFinalBalanceToday(finalBalanceToday);
                 tutorialRequest.setFinalPostCurrentAccount(finalPostCurrentAccount);
                 tutorialRequest.setTotalCash(totalCash);
-                tutorialRequest.setMoneyOnCashier(moneyOnCashier);
+                tutorialRequest.setMoneyOnCashier(calculatedMoneyOnCashier);
+
+                /*
+                * Double result = totalRecipe() - totalExpenses();
+        return Math.round(result * 1000) / 1000.0;
+                * */
+
+                // Comparaison entre la valeur fournie et la valeur calculée
+                double providedMoneyOnCashier = tutorialRequest.getProvidedMoneyOnCashier();
+                String message;
+                double difference = Math.abs(Math.round((calculatedMoneyOnCashier - providedMoneyOnCashier)*1000)/1000.0);
+
+                if (calculatedMoneyOnCashier == providedMoneyOnCashier) {
+                    message = "✅ Tout va bien, les montants correspondent.";
+                } else if (calculatedMoneyOnCashier > providedMoneyOnCashier) {
+                    message = "❌ Déficit de " + difference + " dinars.";
+                    tutorialRequest.setDeficit(difference);
+                } else {
+                    message = "⚠️ Excédent de " + difference + " dinars.";
+                    tutorialRequest.setSurplus(difference);
+                }
 
                 Tutorial tutorial = tutorialRepository.save(tutorialRequest);
 
-                return new ResponseEntity<>(tutorial, HttpStatus.CREATED);
+                // Retourner la réponse avec le message de comparaison
+                return new ResponseEntity<>(new CashCheckResponse(tutorial, message, calculatedMoneyOnCashier,
+                        providedMoneyOnCashier, difference), HttpStatus.CREATED);
             } else {
                 return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
@@ -257,71 +247,20 @@ public class TutorialController {
         }
     }
 
+    // Classe pour structurer la réponse JSON
+    static class CashCheckResponse {
+        public Tutorial tutorial;
+        public String message;
+        public Double calculatedMoneyOnCashier;
+        public Double providedMoneyOnCashier;
+        public Double difference;
 
-
-    @PostMapping("/tutorials")
-    public ResponseEntity<Tutorial> createTutorial(@RequestBody Tutorial tutorial) {
-
-        LocalDate currentLocalDate = LocalDate.now();
-        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
-        String formattedDateTime = currentLocalDate.format(dateTimeFormatter);
-
-        try {
-
-            double totalRecipeToday = tutorial.getRecipeToday() +  tutorial.getBalancePreviousMonth();
-            double totalOperationTreasury = tutorial.getOperationTreasuryAnterior() + tutorial.getOperationTreasuryToday();
-            double totalOperationRegulation = tutorial.getOperationPreviousRegulation() + tutorial.getOperationRegulationToday();
-            double totalExpenses = totalOperationTreasury + totalOperationRegulation;
-            double finalBalanceToday = totalRecipeToday - totalExpenses;
-
-             double finalPostCurrentAccount = (tutorial.getPostCurrentAccount() + tutorial.getCreditExpected())
-                     - tutorial.getRateExpected();
-            double totalCash = finalBalanceToday - (tutorial.getStatesRepartition() + tutorial.getOtherValues() +
-                    finalPostCurrentAccount);
-            double moneyOnCashier = totalCash - tutorial.getMoneySpecies();
-
-            // Set total recipe today in the tutorial object
-            tutorial.setTotalRecipeToday(totalRecipeToday);
-            Tutorial _tutorial = tutorialRepository.save(new Tutorial(
-                    "Operation Date is: " + formattedDateTime,
-                    tutorial.getRecipeToday(),
-                    tutorial.getBalancePreviousMonth(),
-                    totalRecipeToday,
-
-                    tutorial.getOperationTreasuryAnterior(),
-                    tutorial.getOperationTreasuryToday(),
-                    totalOperationTreasury,
-
-                    tutorial.getOperationPreviousRegulation(),
-                    tutorial.getOperationRegulationToday(),
-                    totalOperationRegulation,
-
-                    totalExpenses,
-
-                    finalBalanceToday,
-
-                    tutorial.getPostCurrentAccount(),
-                    tutorial.getCreditExpected(),
-                    tutorial.getRateExpected(),
-
-                    finalPostCurrentAccount,
-
-                    tutorial.getOtherValues(),
-                    tutorial.getStatesRepartition(),
-
-                    totalCash,
-
-                    tutorial.getMoneySpecies(),
-
-                    moneyOnCashier,
-
-                    //tutorial.getOrganismId(),
-                    tutorial.getDescription(),
-                    tutorial.isPublished()));
-
-            return new ResponseEntity<>(_tutorial, HttpStatus.CREATED);
-        } catch (Exception e) {
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        public CashCheckResponse(Tutorial tutorial, String message, Double calculatedMoneyOnCashier, Double providedMoneyOnCashier, Double difference) {
+            this.tutorial = tutorial;
+            this.message = message;
+            this.calculatedMoneyOnCashier = calculatedMoneyOnCashier;
+            this.providedMoneyOnCashier = providedMoneyOnCashier;
+            this.difference = difference;
         }
     }
 
@@ -462,7 +401,8 @@ public class TutorialController {
 
     @GetMapping("/tutorials/finalBalanceLastMonth")
     public Double getFinalBalanceLastMonth(){
-        return tutorialRepository.getFinalBalanceLastMonth();
+        Double result = tutorialRepository.getFinalBalanceLastMonth();
+        return Math.round(result * 1000) / 1000.0;
     }
 
     @GetMapping("/tutorials/treasuryOperationsLastRow")
@@ -472,7 +412,8 @@ public class TutorialController {
 
     @GetMapping("/tutorials/regulationOperationsLastRow")
     public double totalRegulationOperationsLastRow(){
-        return tutorialRepository.totalRegulationOperationsLastRow();
+        Double result = tutorialRepository.totalRegulationOperationsLastRow();
+        return Math.round(result * 1000) / 1000.0;
     }
 
     @GetMapping("/tutorials/postalCurrentAccountLastRow")
@@ -484,5 +425,17 @@ public class TutorialController {
     public double getStatesRepartitionLastRow(){
         return tutorialRepository.statesRepartition();
      }
+
+    @GetMapping("/tutorials/expectedFlowLastRow")
+    public double expectedFlowLastRow() {
+        return tutorialRepository.expectedFlowLastRow();
+    }
+
+    @GetMapping("/tutorials/creditExpectedLastRow")
+    public double creditExpectedLastRow() {
+        return tutorialRepository.creditExpectedLastRow();
+    }
+
+
 
 }

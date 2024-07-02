@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 
-@CrossOrigin(origins = "https://applicationlivredecaisseclient-c45a7f748dd6.herokuapp.com")
+//@CrossOrigin(origins = "https://applicationlivredecaisseclient-c45a7f748dd6.herokuapp.com")
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
 public class OrganismController {

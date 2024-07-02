@@ -91,6 +91,15 @@ public class Tutorial {
     @Column(name = "moneyOnCashier")
     private double moneyOnCashier;
 
+    @Column(name = "providedMoneyOnCashier")
+    private double providedMoneyOnCashier;
+
+    @Column(name = "surplus")
+    private double surplus;
+
+    @Column(name = "deficit")
+    private double deficit;
+
     @Column(name = "description")
     private String description;
 
@@ -137,6 +146,9 @@ public class Tutorial {
                     double totalCash,
                     double moneySpecies,
                     double moneyOnCashier,
+                    double providedMoneyOnCashier,
+                    double surplus,
+                    double deficit,
                    String description,
                     boolean published) {
         this.title = title;
@@ -170,6 +182,10 @@ public class Tutorial {
         this.moneySpecies = moneySpecies;
 
         this.moneyOnCashier = moneyOnCashier;
+        this.providedMoneyOnCashier = providedMoneyOnCashier;
+
+        this.surplus = surplus;
+        this.deficit = deficit;
 
         this.description = description;
         this.published = published;

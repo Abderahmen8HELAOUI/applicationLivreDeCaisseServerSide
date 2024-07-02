@@ -178,4 +178,52 @@ public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
             "                    WHERE operation_date < CURRENT_DATE\n" +
             "                );", nativeQuery = true)
     public double statesRepartition();
+    /////////////
+
+    @Query(value = "WITH filtered_data AS (\n" +
+            "                SELECT\n" +
+            "                    da.credit_expected,\n" +
+            "                    TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') AS operation_date\n" +
+            "                FROM\n" +
+            "                    public.tutorials da\n" +
+            "                WHERE\n" +
+            "                    TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') >= DATE_TRUNC('month', CURRENT_DATE)\n" +
+            "                  AND TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n" +
+            "            )\n" +
+            "            SELECT\n" +
+            "                (fd.credit_expected ) AS prev_operation_treasury_sum\n" +
+            "            FROM\n" +
+            "                filtered_data fd\n" +
+            "            WHERE\n" +
+            "                fd.operation_date = (\n" +
+            "                    SELECT MAX(operation_date)\n" +
+            "                    FROM filtered_data\n" +
+            "                    WHERE operation_date < CURRENT_DATE\n" +
+            "                );", nativeQuery = true)
+    public double creditExpectedLastRow();
+    ////////////////////
+
+    @Query(value = "WITH filtered_data AS (\n" +
+            "                SELECT\n" +
+            "                    da.expected_flow,\n" +
+            "                    TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') AS operation_date\n" +
+            "                FROM\n" +
+            "                    public.tutorials da\n" +
+            "                WHERE\n" +
+            "                    TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') >= DATE_TRUNC('month', CURRENT_DATE)\n" +
+            "                  AND TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n" +
+            "            )\n" +
+            "            SELECT\n" +
+            "                (fd.expected_flow ) AS prev_operation_treasury_sum\n" +
+            "            FROM\n" +
+            "                filtered_data fd\n" +
+            "            WHERE\n" +
+            "                fd.operation_date = (\n" +
+            "                    SELECT MAX(operation_date)\n" +
+            "                    FROM filtered_data\n" +
+            "                    WHERE operation_date < CURRENT_DATE\n" +
+            "                );", nativeQuery = true)
+    public double expectedFlowLastRow();
+
+
 }
