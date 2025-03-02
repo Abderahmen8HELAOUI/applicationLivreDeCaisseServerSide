@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 //for Angular Client (withCredentials)
 //@CrossOrigin(origins = "http://localhost:4200")
-@CrossOrigin(origins = "https://serverside17.onrender.com")
+@CrossOrigin(origins = "https://dailyaccountingapp-963922cd8770.herokuapp.com")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

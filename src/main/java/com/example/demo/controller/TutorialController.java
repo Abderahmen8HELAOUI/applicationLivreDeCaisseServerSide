@@ -23,7 +23,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@CrossOrigin(origins = "https://serverside17.onrender.com")
+@CrossOrigin(origins = "https://dailyaccountingapp-963922cd8770.herokuapp.com")
 //@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
