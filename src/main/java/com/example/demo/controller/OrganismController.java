@@ -3,6 +3,7 @@ package com.example.demo.controller;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.model.Organism;
 import com.example.demo.model.Tutorial;
+import com.example.demo.model.User;
 import com.example.demo.repository.OrganismRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,8 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 
-@CrossOrigin(origins = "https://dailyaccountingapp-963922cd8770.herokuapp.com")
-//@CrossOrigin(origins = "http://localhost:4200")
+//@CrossOrigin(origins = "https://dailyaccountingapp-963922cd8770.herokuapp.com")
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
 public class OrganismController {
@@ -104,7 +105,7 @@ public class OrganismController {
 
 
     @PostMapping("/organisms/create")
-    @PreAuthorize("hasRole('ADMIN')")
+//    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Organism> createTutorial(@RequestBody Organism organism) {
         Organism _organism = organismRepository.save(new Organism(
                 organism.getType(),
@@ -118,5 +119,17 @@ public class OrganismController {
         Organism organism = organismRepository.findByCode(organismCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Organism not found with code = " + organismCode));
         return new ResponseEntity<>(organism.getId(), HttpStatus.OK);
+    }
+
+    @GetMapping("/organisms/{id}/users")
+    public ResponseEntity<List<User>> getUsersByOrganism(@PathVariable("id") UUID id) {
+        Optional<Organism> organismOpt = organismRepository.findById(id);
+
+        if (organismOpt.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        List<User> users = organismOpt.get().getUsers();
+        return new ResponseEntity<>(users, HttpStatus.OK);
     }
 }

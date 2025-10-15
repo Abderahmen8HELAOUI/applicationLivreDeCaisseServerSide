@@ -1,10 +1,15 @@
 package com.example.demo.controller;
 
+import com.example.demo.config.EmailService;
 import com.example.demo.model.Organism;
 import com.example.demo.model.Tutorial;
+import com.example.demo.model.TutorialDTO;
+import com.example.demo.payload.request.EmailRequest;
 import com.example.demo.repository.OrganismRepository;
 import com.example.demo.repository.TutorialRepository;
 import com.example.demo.exception.ResourceNotFoundException;
+import com.example.demo.repository.UserRepository;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Order;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,8 +29,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-@CrossOrigin(origins = "https://dailyaccountingapp-963922cd8770.herokuapp.com")
-//@CrossOrigin(origins = "http://localhost:4200")
+//@CrossOrigin(origins = "https://dailyaccountingapp-963922cd8770.herokuapp.com")
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -33,6 +39,10 @@ public class TutorialController {
     private final TutorialRepository tutorialRepository;
 
     private final OrganismRepository organismRepository;
+
+    private final UserRepository userRepository;
+
+    private final EmailService emailService;
 
     private Sort.Direction getSortDirection(String direction) {
         if (direction.equals("asc")) {
@@ -170,6 +180,80 @@ public class TutorialController {
         }
     }
 
+    @PostMapping("/tutorials/send-email")
+    @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> sendTutorialByEmail(@RequestBody EmailRequest request) {
+
+        // Vérifier si l'email existe dans la table User
+//        boolean emailExists = userRepository.existsByEmail(request.getEmail());
+//
+//        if (!emailExists) {
+//            return new ResponseEntity<>("L'email n'est attribué à aucun utilisateur.", HttpStatus.BAD_REQUEST);
+//        }
+
+        Optional<Tutorial> tutorialData = tutorialRepository.findById(request.getTutorialId());
+
+        if (tutorialData.isPresent()) {
+            Tutorial tutorial = tutorialData.get();
+
+            // Construire le contenu de l'email
+            String subject = "Détails du Tutoriel: " + tutorial.getTitle();
+            String content =
+                    "<p>Nom de la Recette: " + tutorial.getOrganism().getName() + "</p>" +
+
+                    "<p>Code de la Recette: " + tutorial.getOrganism().getCode() + "</p>" +
+                    "<p>Recette Ajourd'hui: " + tutorial.getRecipeToday() + "</p>" +
+                    "<p>Solde Mois Antérieur: " + tutorial.getBalancePreviousMonth() + "</p>" +
+                    "<p>Total Rcette Ajourd'hui: " + tutorial.getTotalRecipeToday()  + "</p>" +
+
+                    "<p>Opération Trésor Antérieur: " + tutorial.getOperationTreasuryAnterior() + "</p>" +
+                    "<p>Opération Trésor Aujourd'hui: " + tutorial.getBalancePreviousMonth() + "</p>" +
+                    "<p>Total Opération Trésor: " + tutorial.getTotalOperationTreasury()  + "</p>" +
+
+                    "<p>Opération Régularisation Antérieur: " + tutorial.getOperationPreviousRegulation() + "</p>" +
+                    "<p>Opération Régularisation Aujourd'hui: " + tutorial.getOperationRegulationToday() + "</p>" +
+                    "<p>Total Opération Régularisation: " + tutorial.getTotalOperationRegulation()  + "</p>" +
+
+                    "<p>Total Dépenses: " + tutorial.getTotalExpenses() + "</p>" +
+
+                    "<p>Solde Aujourd'hui: " + tutorial.getFinalBalanceToday() + "</p>" +
+
+                    "<p>Compte Courant Pstal: " + tutorial.getPostCurrentAccount()  + "</p>" +
+
+                    "<p>Crédit Attendu: " + tutorial.getCreditExpected() + "</p>" +
+
+                    "<p>Débit Attendu: " + tutorial.getRateExpected() + "</p>" +
+
+                    "<p>Autres valeurs: " + tutorial.getOtherValues()  + "</p>" +
+
+                    "<p>CCP Final: " + tutorial.getFinalPostCurrentAccount() + "</p>" +
+
+                    "<p>Etats des Répartition: " + tutorial.getStatesRepartition() + "</p>" +
+
+                    "<p>Montant chez le Receveur: " + tutorial.getMoneySpecies()  + "</p>" +
+
+                    "<p>Total Numéraire: " + tutorial.getTotalCash() + "</p>" +
+
+                    "<p>Monnaie chez le Caissier: " + tutorial.getMoneyOnCashier() + "</p>" +
+
+                    "<p>Monnaie chez le Caissier avant Verification: " + tutorial.getProvidedMoneyOnCashier()  + "</p>" +
+
+                    "<p>Exedant: " + tutorial.getSurplus() + "</p>" +
+
+                    "<p>Déficit: " + tutorial.getDeficit() + "</p>" ;
+
+            try {
+                emailService.sendEmail(request.getEmail(), subject, content);
+            } catch (MessagingException e) {
+                return new ResponseEntity<>("Erreur lors de l'envoi de l'email", HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            return new ResponseEntity<>("Email envoyé avec succès à " + request.getEmail(), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Tutoriel non trouvé", HttpStatus.NOT_FOUND);
+        }
+    }
+
     @PostMapping("/organisms/{organismCode}/tutorials")
     @PreAuthorize("hasRole('MODERATOR')")
     public ResponseEntity<?> createTutorialByOrganismCode(
@@ -213,11 +297,6 @@ public class TutorialController {
                 tutorialRequest.setFinalPostCurrentAccount(finalPostCurrentAccount);
                 tutorialRequest.setTotalCash(totalCash);
                 tutorialRequest.setMoneyOnCashier(calculatedMoneyOnCashier);
-
-                /*
-                * Double result = totalRecipe() - totalExpenses();
-        return Math.round(result * 1000) / 1000.0;
-                * */
 
                 // Comparaison entre la valeur fournie et la valeur calculée
                 double providedMoneyOnCashier = tutorialRequest.getProvidedMoneyOnCashier();
@@ -407,7 +486,8 @@ public class TutorialController {
 
     @GetMapping("/tutorials/treasuryOperationsLastRow")
     public double totalTreasuryOperationsLastRow(){
-        return tutorialRepository.totalTreasuryOperationsLastRow();
+        Double result = tutorialRepository.totalTreasuryOperationsLastRow();
+        return Math.round(result * 1000) / 1000.0;
     }
 
     @GetMapping("/tutorials/regulationOperationsLastRow")

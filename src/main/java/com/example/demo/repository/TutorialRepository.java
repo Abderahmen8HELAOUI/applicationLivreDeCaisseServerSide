@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
@@ -224,6 +225,11 @@ public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
             "                    WHERE operation_date < CURRENT_DATE\n" +
             "                );", nativeQuery = true)
     public double expectedFlowLastRow();
+
+
+        @Query("SELECT t FROM Tutorial t JOIN FETCH t.organism WHERE t.id = :id")
+        Optional<Tutorial> findByIdWithOrganism(@Param("id") Long id);
+
 
 
 }
