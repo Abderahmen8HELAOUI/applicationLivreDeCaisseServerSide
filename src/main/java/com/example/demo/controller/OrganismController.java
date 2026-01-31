@@ -105,7 +105,7 @@ public class OrganismController {
 
 
     @PostMapping("/organisms/create")
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Organism> createTutorial(@RequestBody Organism organism) {
         Organism _organism = organismRepository.save(new Organism(
                 organism.getType(),
