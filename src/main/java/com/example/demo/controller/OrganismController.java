@@ -18,8 +18,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 
-//@CrossOrigin(origins = "https://dailyaccountingapp-963922cd8770.herokuapp.com")
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "https://serverside17.onrender.com")
+//@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
 public class OrganismController {
