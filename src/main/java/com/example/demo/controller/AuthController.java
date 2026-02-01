@@ -6,6 +6,7 @@ import com.example.demo.model.Role;
 import com.example.demo.model.User;
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignupRequest;
+import com.example.demo.payload.response.JwtResponse;
 import com.example.demo.payload.response.MessageResponse;
 import com.example.demo.payload.response.UserInfoResponse;
 import com.example.demo.repository.OrganismRepository;
@@ -32,8 +33,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 //for Angular Client (withCredentials)
-//@CrossOrigin(origins = "http://localhost:4200")
-@CrossOrigin(origins = "https://serverside17.onrender.com")
+@CrossOrigin(origins = "http://localhost:4200")
+//@CrossOrigin(origins = "https://serverside17.onrender.com")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -56,23 +57,17 @@ public class AuthController {
                 .authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        String jwt = jwtUtils.generateJwtToken(authentication);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-
-        ResponseCookie jwtCookie = jwtUtils.generateJwtCookie(userDetails);
 
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(item -> item.getAuthority())
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, jwtCookie.toString())
-                .body(new UserInfoResponse(
-                        userDetails.getId(),
-                        userDetails.getUsername(),
-                        userDetails.getEmail(),
-                        roles,
-                        userDetails.getUniqueIdentifier(),
-                        userDetails.getOrganismCode())
+        return ResponseEntity.ok(new JwtResponse(jwt, userDetails.getId(),
+                        userDetails.getUsername(), userDetails.getEmail(),
+                        roles,userDetails.getUniqueIdentifier(),userDetails.getOrganismCode())
                         );
     }
 
@@ -139,10 +134,10 @@ public class AuthController {
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }
 
-    @PostMapping("/signout")
-    public ResponseEntity<?> logoutUser() {
-        ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
-        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body(new MessageResponse("You've been signed out!"));
-    }
+//    @PostMapping("/signout")
+//    public ResponseEntity<?> logoutUser() {
+//        ResponseCookie cookie = jwtUtils.getCleanJwtCookie();
+//        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString())
+//                .body(new MessageResponse("You've been signed out!"));
+//    }
 }

@@ -38,12 +38,12 @@ public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
             nativeQuery = true)
     Double totalRecipeWithDate(@Param("givenDate") Date givenDate);
 
-
     @Query(value = "SELECT CAST(SUM(da.operation_treasury_anterior + da.operation_treasury_today ) as decimal(10,3)) AS total_recettes\n" +
             "    FROM public.tutorials da\n" +
             "    WHERE TO_CHAR(current_date, 'dd-mm-yyyy') = SUBSTRING(da.title, 20, 10);",
             nativeQuery = true)
     public Double totalTreasuryOperations();
+
     @Query(value = "SELECT CAST(SUM(da.operation_regulation_prior + da.operation_regulation_today ) as decimal(10,3)) AS total_recettes\n" +
             "    FROM public.tutorials da\n" +
             "    WHERE TO_CHAR(current_date, 'dd-mm-yyyy') = SUBSTRING(da.title, 20, 10);",
