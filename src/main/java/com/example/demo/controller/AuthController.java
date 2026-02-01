@@ -33,8 +33,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 //for Angular Client (withCredentials)
-@CrossOrigin(origins = "http://localhost:4200")
-//@CrossOrigin(origins = "https://serverside17.onrender.com")
+//@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "https://serverside17.onrender.com")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
