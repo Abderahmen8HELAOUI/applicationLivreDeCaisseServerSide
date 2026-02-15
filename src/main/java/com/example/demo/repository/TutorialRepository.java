@@ -38,6 +38,7 @@ public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
             nativeQuery = true)
     Double totalRecipeWithDate(@Param("givenDate") Date givenDate);
 
+
     @Query(value = "SELECT CAST(SUM(da.operation_treasury_anterior + da.operation_treasury_today ) as decimal(10,3)) AS total_recettes\n" +
             "    FROM public.tutorials da\n" +
             "    WHERE TO_CHAR(current_date, 'dd-mm-yyyy') = SUBSTRING(da.title, 20, 10);",
@@ -95,22 +96,19 @@ public interface TutorialRepository extends JpaRepository<Tutorial, Long> {
             "        da.operation_treasury_anterior,\n" +
             "        da.operation_treasury_today,\n" +
             "        TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') AS operation_date\n" +
-            "    FROM\n" +
-            "        public.tutorials da\n" +
-            "    WHERE\n" +
-            "        TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') >= DATE_TRUNC('month', CURRENT_DATE)\n" +
+            "    FROM public.tutorials da\n" +
+            "    WHERE TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') >= DATE_TRUNC('month', CURRENT_DATE)\n" +
             "      AND TO_DATE(SUBSTRING(da.title, 20, 10), 'DD-MM-YYYY') < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'\n" +
             ")\n" +
-            "SELECT\n" +
-            "    (fd.operation_treasury_anterior + fd.operation_treasury_today) AS prev_operation_treasury_sum\n" +
-            "FROM\n" +
-            "    filtered_data fd\n" +
-            "WHERE\n" +
-            "    fd.operation_date = (\n" +
-            "        SELECT MAX(operation_date)\n" +
-            "        FROM filtered_data\n" +
-            "        WHERE operation_date < CURRENT_DATE\n" +
-            "    );", nativeQuery = true)
+            "SELECT COALESCE(\n" +
+            "               (fd.operation_treasury_anterior + fd.operation_treasury_today),\n" +
+            "               0\n" +
+            "       ) AS prev_operation_treasury_sum\n" +
+            "FROM filtered_data fd\n" +
+            "WHERE fd.operation_date = (\n" +
+            "    SELECT MAX(operation_date)\n" +
+            "    FROM filtered_data\n" +
+            ");\n", nativeQuery = true)
     public double totalTreasuryOperationsLastRow();
 
     @Query(value = "WITH filtered_data AS (\n" +

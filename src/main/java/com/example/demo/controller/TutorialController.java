@@ -29,8 +29,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-//@CrossOrigin(origins = "https://serverside17.onrender.com")
-@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -184,12 +182,12 @@ public class TutorialController {
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     public ResponseEntity<?> sendTutorialByEmail(@RequestBody EmailRequest request) {
 
-        // Vérifier si l'email existe dans la table User
-//        boolean emailExists = userRepository.existsByEmail(request.getEmail());
-//
-//        if (!emailExists) {
-//            return new ResponseEntity<>("L'email n'est attribué à aucun utilisateur.", HttpStatus.BAD_REQUEST);
-//        }
+         //Vérifier si l'email existe dans la table User
+        boolean emailExists = userRepository.existsByEmail(request.getEmail());
+
+        if (!emailExists) {
+            return new ResponseEntity<>("L'email n'est attribué à aucun utilisateur.", HttpStatus.BAD_REQUEST);
+        }
 
         Optional<Tutorial> tutorialData = tutorialRepository.findById(request.getTutorialId());
 
@@ -487,8 +485,10 @@ public class TutorialController {
     @GetMapping("/tutorials/treasuryOperationsLastRow")
     public double totalTreasuryOperationsLastRow(){
         Double result = tutorialRepository.totalTreasuryOperationsLastRow();
-        return Math.round(result * 1000) / 1000.0;
+        double safeResult = (result != null) ? result : 0.0;
+        return Math.round(safeResult * 1000) / 1000.0;
     }
+
 
     @GetMapping("/tutorials/regulationOperationsLastRow")
     public double totalRegulationOperationsLastRow(){
